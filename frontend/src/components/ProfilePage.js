@@ -17,7 +17,7 @@ const ProfilePage = () => {
     <Container>
       <ProfilePicture src={user.picture} alt="Profile" />
       <ProfileInfo>
-        <h2>{user.name}</h2>
+        <h2>Username: {user.name}</h2>
         <p>Email: {user.email}</p>
       </ProfileInfo>
     </Container>
