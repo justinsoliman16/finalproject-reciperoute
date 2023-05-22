@@ -1,19 +1,25 @@
-// App.js
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { Auth0Provider } from "@auth0/auth0-react";
+import { Auth0Provider, withAuthenticationRequired } from "@auth0/auth0-react";
 import MainPage from "./MainPage";
 import RecipeDetailsPage from "./RecipeDetailsPage";
 import Navbar from "./Navbar";
+import ProfilePage from "./ProfilePage";
 
 const App = () => {
   const apiKey = process.env.REACT_APP_SPOONACULAR_API_KEY;
+  const auth0Domain = process.env.REACT_APP_AUTH0_DOMAIN;
+  const auth0ClientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
 
   return (
     <Auth0Provider
-      domain={process.env.REACT_APP_AUTH0_DOMAIN}
-      clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
-      redirectUri={window.location.origin}
+      domain={auth0Domain}
+      clientId={auth0ClientId}
+      // redirectUri={window.location.origin}
+      // Specify the authorizationParams prop with the redirect_uri
+      authorizationParams={{
+        redirect_uri: window.location.origin,
+      }}
     >
       <Router>
         <Navbar />
@@ -21,7 +27,13 @@ const App = () => {
           <Route path="/" element={<MainPage />} />
           <Route
             path="/recipes/:recipeId"
-            element={<RecipeDetailsPage apiKey={apiKey} />} // Pass the apiKey prop here
+            element={<RecipeDetailsPage apiKey={apiKey} />}
+          />
+          <Route
+            path="/profile"
+            element={withAuthenticationRequired(ProfilePage, {
+              onRedirecting: () => <div>Loading...</div>,
+            })}
           />
         </Routes>
       </Router>

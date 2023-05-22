@@ -2,17 +2,33 @@ import React from "react";
 import styled from "styled-components";
 import LoginButton from "./LoginButton";
 import LogoutButton from "./LogoutButton";
+import { NavLink as RouterNavLink } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 
 const Navbar = () => {
+  const { isAuthenticated, user } = useAuth0();
+
+  // Added console.log() statements for testing on navbar
+  //console.log("Authentication status:", isAuthenticated);
+  //console.log("User data:", user);
+
   return (
     <StyledNav>
-      <NavLink href="/">Recipe Route</NavLink>
+      <NavLink to="/">Recipe Route</NavLink>
       <NavLinks>
-        <NavLink href="/">Home</NavLink>
-        <NavLink href="/categories">Categories</NavLink>
-        <NavLink href="/profile">Profile</NavLink>
-        <LoginButton />
-        <LogoutButton />
+        <NavLink to="/">Home</NavLink>
+        <NavLink to="/profile">Profile</NavLink>
+        {isAuthenticated ? (
+          <>
+            <WelcomeMessage>Welcome, {user.nickname}!</WelcomeMessage>
+            {user.picture && (
+              <ProfilePicture src={user.picture} alt="Profile" />
+            )}
+            <LogoutButton />
+          </>
+        ) : (
+          <LoginButton />
+        )}
       </NavLinks>
     </StyledNav>
   );
@@ -32,7 +48,7 @@ const NavLinks = styled.div`
   margin-left: auto;
 `;
 
-const NavLink = styled.a`
+const NavLink = styled(RouterNavLink)`
   margin-right: 10px;
   color: white;
   text-decoration: none;
@@ -40,6 +56,18 @@ const NavLink = styled.a`
   &:hover {
     text-decoration: underline;
   }
+`;
+
+const WelcomeMessage = styled.span`
+  margin-right: 10px;
+  font-weight: bold;
+`;
+
+const ProfilePicture = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 10px;
 `;
 
 export default Navbar;

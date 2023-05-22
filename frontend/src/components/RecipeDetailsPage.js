@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import styled from "styled-components";
+import { useAuth0 } from "@auth0/auth0-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faStar as emptyStar } from "@fortawesome/free-regular-svg-icons";
+import { faStar as filledStar } from "@fortawesome/free-solid-svg-icons";
 
 const RecipeDetailsPage = ({ apiKey }) => {
-  console.log(apiKey);
   const { recipeId } = useParams();
   const [recipe, setRecipe] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
   const [nutritionInfo, setNutritionInfo] = useState(null);
+  const { isAuthenticated } = useAuth0();
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     const fetchRecipeDetails = async () => {
@@ -24,6 +29,25 @@ const RecipeDetailsPage = ({ apiKey }) => {
 
     fetchRecipeDetails();
   }, [recipeId, apiKey]);
+
+  useEffect(() => {
+    // Simulating favorite state retrieval from backend
+    const fetchFavoriteState = async () => {
+      try {
+        // Make an API call to retrieve the favorite state for the current user and recipeId
+        // Replace the API call with your backend implementation
+        const response = await fetch(`/api/favorites/${recipeId}`);
+        const data = await response.json();
+        setIsFavorite(data.isFavorite);
+      } catch (error) {
+        console.error("Error fetching favorite state:", error);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchFavoriteState();
+    }
+  }, [isAuthenticated, recipeId]);
 
   const handleSectionClick = (section) => {
     setSelectedSection(section);
@@ -47,6 +71,30 @@ const RecipeDetailsPage = ({ apiKey }) => {
     }
   }, [selectedSection, recipeId, apiKey]);
 
+  const handleFavoriteClick = () => {
+    if (isAuthenticated) {
+      // Update the favorite state in the backend
+      // Replace the API call with your backend implementation
+      fetch(`/api/favorites/${recipeId}`, {
+        method: isFavorite ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          recipeId: recipeId,
+          isFavorite: !isFavorite,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setIsFavorite(data.isFavorite);
+        })
+        .catch((error) => {
+          console.error("Error updating favorite state:", error);
+        });
+    }
+  };
+
   if (!recipe) {
     return <div>Loading...</div>;
   }
@@ -66,6 +114,9 @@ const RecipeDetailsPage = ({ apiKey }) => {
       <HeaderText>Recipe Details</HeaderText>
       <RecipeTitle>{title}</RecipeTitle>
       <RecipeImage src={image} alt={title} />
+      <FavoriteButton onClick={handleFavoriteClick} isFavorite={isFavorite}>
+        <FontAwesomeIcon icon={isFavorite ? filledStar : emptyStar} />
+      </FavoriteButton>
       <ButtonsContainer>
         <SummaryButton
           onClick={() => handleSectionClick("summary")}
@@ -157,6 +208,29 @@ const RecipeImage = styled.img`
   object-fit: cover;
   border-radius: 5px;
   margin-bottom: 20px;
+`;
+
+const FavoriteButton = styled.button`
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-size: 24px;
+  margin-bottom: 10px;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:focus {
+    outline: none;
+  }
+
+  svg {
+    color: ${(props) => (props.isFavorite ? "#ffc107" : "white")};
+  }
 `;
 
 const ButtonsContainer = styled.div`
