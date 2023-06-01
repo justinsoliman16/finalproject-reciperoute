@@ -30,7 +30,6 @@ const MainPage = () => {
   };
 
   const handleRecipeClick = (recipeId) => {
-    // Implement the logic to navigate or display more information about the recipe
     console.log(`Clicked on recipe with ID ${recipeId}`);
   };
 
@@ -57,7 +56,7 @@ const MainPage = () => {
               <Link to={`/recipes/${recipe.id}`}>
                 <img src={recipe.image} alt={recipe.title} />
                 <RecipeTitle>{recipe.title}</RecipeTitle>
-                {/* Display other recipe details */}
+                <RecipeCategory>{recipe.category}</RecipeCategory>
               </Link>
             </RecipeCard>
           ))}
@@ -155,7 +154,7 @@ const RecipeCard = styled.div`
 
   img {
     width: 100%;
-    height: 200px; /* Adjust the height as needed */
+    height: 200px;
     object-fit: cover;
     border-radius: 5px;
   }
@@ -166,6 +165,12 @@ const RecipeTitle = styled.h3`
   margin-bottom: 10px;
   color: black;
   text-decoration: none;
+`;
+
+const RecipeCategory = styled.p`
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #888;
 `;
 
 const Pagination = styled.div`

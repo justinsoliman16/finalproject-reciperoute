@@ -1,29 +1,44 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
-import LoginButton from "./LoginButton";
-import LogoutButton from "./LogoutButton";
 import { NavLink as RouterNavLink } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
+import LoginButton from "./LoginButton";
+import LogoutButton from "./LogoutButton";
+import axios from "axios";
 
 const Navbar = () => {
   const { isAuthenticated, user } = useAuth0();
 
-  // Added console.log() statements for testing on navbar
-  //console.log("Authentication status:", isAuthenticated);
-  //console.log("User data:", user);
+  useEffect(() => {
+    // Function to register user upon app load
+    const registerUser = async () => {
+      try {
+        // Make a POST request to the registration endpoint
+        await axios.post("/api/register", {
+          email: user.email,
+          name: user.name,
+        });
+        console.log("User registered successfully!");
+      } catch (error) {
+        console.error("Error registering user:", error);
+      }
+    };
+
+    // Check if user is authenticated and register if true
+    if (isAuthenticated && user) {
+      registerUser();
+    }
+  }, [isAuthenticated, user]);
 
   return (
     <StyledNav>
       <NavLink to="/">Recipe Route</NavLink>
       <NavLinks>
         <NavLink to="/">Home</NavLink>
-        <NavLink to="/profile">Profile</NavLink>
         {isAuthenticated ? (
           <>
+            <NavLink to="/profile">Profile</NavLink>
             <WelcomeMessage>Welcome, {user.nickname}!</WelcomeMessage>
-            {user.picture && (
-              <ProfilePicture src={user.picture} alt="Profile" />
-            )}
             <LogoutButton />
           </>
         ) : (
@@ -40,7 +55,7 @@ const StyledNav = styled.nav`
   align-items: center;
   background-color: #3f704d;
   color: white;
-  padding: 10px;
+  padding: 20px;
 `;
 
 const NavLinks = styled.div`
@@ -61,13 +76,6 @@ const NavLink = styled(RouterNavLink)`
 const WelcomeMessage = styled.span`
   margin-right: 10px;
   font-weight: bold;
-`;
-
-const ProfilePicture = styled.img`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-right: 10px;
 `;
 
 export default Navbar;

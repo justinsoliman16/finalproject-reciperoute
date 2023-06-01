@@ -8,7 +8,7 @@ export const handleSearch = async (
     const response = await fetch(
       `https://api.spoonacular.com/recipes/complexSearch?query=${keyword}&number=3&offset=${
         (currentPage - 1) * 3
-      }&apiKey=2adf250f5d79419b8e77854d03ab469e`
+      }&apiKey=${process.env.REACT_APP_SPOONACULAR_API_KEY}`
     );
     const data = await response.json();
     setRecipes(data.results);
