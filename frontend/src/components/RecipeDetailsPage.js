@@ -22,11 +22,10 @@ const RecipeDetailsPage = () => {
   useEffect(() => {
     const fetchRecipeDetails = async () => {
       try {
-        const response = await fetch(
+        const response = await axios.get(
           `https://api.spoonacular.com/recipes/${recipeId}/information?apiKey=${process.env.REACT_APP_SPOONACULAR_API_KEY}`
         );
-        const data = await response.json();
-        setRecipe(data);
+        setRecipe(response.data);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching recipe details:", error);
@@ -104,7 +103,7 @@ const RecipeDetailsPage = () => {
     try {
       console.log("Submitting comment:", comment);
 
-      const response = await axios.post(`/api/recipes/${recipeId}/comments`, {
+      await axios.post(`/api/recipes/${recipeId}/comments`, {
         email: user.email,
         content: comment,
       });
@@ -114,8 +113,11 @@ const RecipeDetailsPage = () => {
       // Clear comment input field
       setComment("");
 
-      // Update comments state with the new comment
-      setComments((prevComments) => [...prevComments, response.data]);
+      // Fetch updated comments
+      const updatedComments = await axios.get(
+        `/api/recipes/${recipeId}/comments`
+      );
+      setComments(updatedComments.data);
     } catch (error) {
       console.error("Error submitting comment:", error);
     }
@@ -127,8 +129,10 @@ const RecipeDetailsPage = () => {
       console.log("Comment deleted successfully!");
 
       // Fetch updated comments
-      const response = await axios.get(`/api/recipes/${recipeId}/comments`);
-      setComments(response.data);
+      const updatedComments = await axios.get(
+        `/api/recipes/${recipeId}/comments`
+      );
+      setComments(updatedComments.data);
     } catch (error) {
       console.error("Error deleting comment:", error);
     }
@@ -152,14 +156,11 @@ const RecipeDetailsPage = () => {
       });
       console.log("Comment updated successfully!");
 
-      // Update the comments state with the updated comment
-      const updatedComments = comments.map((c) => {
-        if (c._id === commentId) {
-          return { ...c, content: updatedContent, isEditing: false };
-        }
-        return c;
-      });
-      setComments(updatedComments);
+      // Fetch updated comments
+      const updatedComments = await axios.get(
+        `/api/recipes/${recipeId}/comments`
+      );
+      setComments(updatedComments.data);
     } catch (error) {
       console.error("Error updating comment:", error);
     }
