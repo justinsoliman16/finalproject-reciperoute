@@ -104,7 +104,7 @@ const RecipeDetailsPage = () => {
     try {
       console.log("Submitting comment:", comment);
 
-      await axios.post(`/api/recipes/${recipeId}/comments`, {
+      const response = await axios.post(`/api/recipes/${recipeId}/comments`, {
         email: user.email,
         content: comment,
       });
@@ -114,9 +114,8 @@ const RecipeDetailsPage = () => {
       // Clear comment input field
       setComment("");
 
-      // Fetch updated comments
-      const response = await axios.get(`/api/recipes/${recipeId}/comments`);
-      setComments(response.data);
+      // Update comments state with the new comment
+      setComments((prevComments) => [...prevComments, response.data]);
     } catch (error) {
       console.error("Error submitting comment:", error);
     }
@@ -138,7 +137,7 @@ const RecipeDetailsPage = () => {
   const handleCommentEdit = (commentId) => {
     const updatedComments = comments.map((c) => {
       if (c._id === commentId) {
-        return { ...c, isEditing: true };
+        return { ...c, isEditing: true, updatedContent: c.content };
       } else {
         return c;
       }
@@ -153,9 +152,14 @@ const RecipeDetailsPage = () => {
       });
       console.log("Comment updated successfully!");
 
-      // Fetch updated comments
-      const response = await axios.get(`/api/recipes/${recipeId}/comments`);
-      setComments(response.data);
+      // Update the comments state with the updated comment
+      const updatedComments = comments.map((c) => {
+        if (c._id === commentId) {
+          return { ...c, content: updatedContent, isEditing: false };
+        }
+        return c;
+      });
+      setComments(updatedComments);
     } catch (error) {
       console.error("Error updating comment:", error);
     }
@@ -164,7 +168,7 @@ const RecipeDetailsPage = () => {
   const handleCommentCancel = (commentId) => {
     const updatedComments = comments.map((c) => {
       if (c._id === commentId) {
-        return { ...c, isEditing: false };
+        return { ...c, isEditing: false, updatedContent: "" };
       } else {
         return c;
       }
@@ -202,66 +206,68 @@ const RecipeDetailsPage = () => {
         {comments.length > 0 ? (
           <CommentList>
             {comments.map(
-              ({ _id, username, content, timestamp, isEditing }) => (
-                <CommentItem key={_id}>
-                  <CommentUser>{username}:</CommentUser>
-                  {isEditing ? (
-                    <>
-                      <CommentEditInput
-                        type="text"
-                        value={content}
-                        onChange={(event) => {
-                          const updatedComments = comments.map((c) => {
-                            if (c._id === _id) {
-                              return {
-                                ...c,
-                                updatedContent: event.target.value,
-                              };
-                            } else {
-                              return c;
-                            }
-                          });
-                          setComments(updatedComments);
-                        }}
-                      />
-                      <CommentUpdateButton
-                        onClick={() =>
-                          handleCommentUpdate(
-                            _id,
-                            comments.find((c) => c._id === _id)?.updatedContent
-                          )
-                        }
-                      >
-                        Update
-                      </CommentUpdateButton>
-                      <CommentCancelButton
-                        onClick={() => handleCommentCancel(_id)}
-                      >
-                        Cancel
-                      </CommentCancelButton>
-                    </>
-                  ) : (
-                    <>
-                      <CommentContent>{content}</CommentContent>
-                      <CommentTimestamp>{timestamp}</CommentTimestamp>
-                      {user?.email === username && (
-                        <>
-                          <CommentEditButton
-                            onClick={() => handleCommentEdit(_id)}
-                          >
-                            Edit
-                          </CommentEditButton>
-                          <CommentDeleteButton
-                            onClick={() => handleCommentDelete(_id)}
-                          >
-                            Delete
-                          </CommentDeleteButton>
-                        </>
-                      )}
-                    </>
-                  )}
-                </CommentItem>
-              )
+              ({ _id, username, content, timestamp, isEditing }) => {
+                const updatedContent = comments.find(
+                  (c) => c._id === _id
+                )?.updatedContent;
+                return (
+                  <CommentItem key={_id}>
+                    <CommentUser>{username}:</CommentUser>
+                    {isEditing ? (
+                      <>
+                        <CommentEditInput
+                          type="text"
+                          value={updatedContent}
+                          onChange={(event) => {
+                            const updatedComments = comments.map((c) => {
+                              if (c._id === _id) {
+                                return {
+                                  ...c,
+                                  updatedContent: event.target.value,
+                                };
+                              } else {
+                                return c;
+                              }
+                            });
+                            setComments(updatedComments);
+                          }}
+                        />
+                        <CommentUpdateButton
+                          onClick={() =>
+                            handleCommentUpdate(_id, updatedContent)
+                          }
+                        >
+                          Update
+                        </CommentUpdateButton>
+                        <CommentCancelButton
+                          onClick={() => handleCommentCancel(_id)}
+                        >
+                          Cancel
+                        </CommentCancelButton>
+                      </>
+                    ) : (
+                      <>
+                        <CommentContent>{content}</CommentContent>
+                        <CommentTimestamp>{timestamp}</CommentTimestamp>
+                        {user?.email === username && (
+                          <>
+                            <CommentEditButton
+                              onClick={() => handleCommentEdit(_id)}
+                            >
+                              Edit
+                            </CommentEditButton>
+                            <CommentDeleteButton
+                              onClick={() => handleCommentDelete(_id)}
+                            >
+                              Delete
+                            </CommentDeleteButton>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </CommentItem>
+                );
+              }
             )}
           </CommentList>
         ) : (
@@ -272,6 +278,8 @@ const RecipeDetailsPage = () => {
     </Container>
   );
 };
+
+// Rest of the code...
 
 const RecipeImageContainer = styled.div`
   width: 800px;

@@ -5,11 +5,12 @@ const IngredientsList = ({ ingredients }) => {
   return (
     <IngredientsContainer>
       <IngredientsTitle>Ingredients</IngredientsTitle>
-      {ingredients.map((ingredient, index) => (
-        <Ingredient key={index}>
-          {ingredient.amount} {ingredient.unit} - {ingredient.name}
-        </Ingredient>
-      ))}
+      {ingredients &&
+        ingredients.map((ingredient, index) => (
+          <Ingredient key={index}>
+            {ingredient.amount} {ingredient.unit} - {ingredient.name}
+          </Ingredient>
+        ))}
     </IngredientsContainer>
   );
 };
