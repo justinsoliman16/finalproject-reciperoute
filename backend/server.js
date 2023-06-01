@@ -188,20 +188,47 @@ app.delete("/api/recipes/:recipeId/comments/:commentId", async (req, res) => {
 
     const commentsCollection = client.db("RecipeRoute").collection("comments");
 
-    const removeComment = await commentsCollection.updateOne(
-      { recipeId: recipeId },
-      { $pull: { comments: { _id: new ObjectId(commentId) } } }
-    );
+    const removeComment = await commentsCollection.deleteOne({
+      _id: new ObjectId(commentId),
+    });
 
-    if (removeComment.modifiedCount === 1) {
+    if (removeComment.deletedCount === 1) {
       console.log("Comment removed successfully");
-      res.sendStatus(200);
+      res.sendStatus(204); // Success: No Content
     } else {
       console.error("Error removing comment");
       res.sendStatus(500);
     }
   } catch (error) {
     console.error("Error removing comment:", error);
+    res.sendStatus(500);
+  }
+});
+
+// Handle PUT request to update a comment
+app.put("/api/recipes/:recipeId/comments/:commentId", async (req, res) => {
+  const { recipeId, commentId } = req.params;
+  const { content } = req.body;
+
+  try {
+    await client.connect();
+
+    const commentsCollection = client.db("RecipeRoute").collection("comments");
+
+    const updateComment = await commentsCollection.updateOne(
+      { _id: new ObjectId(commentId) },
+      { $set: { content } }
+    );
+
+    if (updateComment.modifiedCount === 1) {
+      console.log("Comment updated successfully");
+      res.sendStatus(204); // Success: No Content
+    } else {
+      console.error("Error updating comment");
+      res.sendStatus(500);
+    }
+  } catch (error) {
+    console.error("Error updating comment:", error);
     res.sendStatus(500);
   }
 });

@@ -66,16 +66,6 @@ const RecipeDetailsPage = () => {
     fetchComments();
   }, [recipeId]);
 
-  if (loading) {
-    return <LoadingPage />;
-  }
-
-  if (!recipe) {
-    return <div>Error: Recipe not found</div>;
-  }
-
-  const { title, image, summary, extendedIngredients, instructions } = recipe;
-
   const handleFavorite = async () => {
     if (isAuthenticated) {
       try {
@@ -85,8 +75,8 @@ const RecipeDetailsPage = () => {
         } else {
           await axios.post(`/api/user/${user.email}/favorites`, {
             recipeId: recipeId,
-            title: title,
-            image: image,
+            title: recipe?.title,
+            image: recipe?.image,
           });
           console.log("Recipe added to favorites!");
         }
@@ -145,21 +135,60 @@ const RecipeDetailsPage = () => {
     }
   };
 
+  const handleCommentEdit = (commentId) => {
+    const updatedComments = comments.map((c) => {
+      if (c._id === commentId) {
+        return { ...c, isEditing: true };
+      } else {
+        return c;
+      }
+    });
+    setComments(updatedComments);
+  };
+
+  const handleCommentUpdate = async (commentId, updatedContent) => {
+    try {
+      await axios.put(`/api/recipes/${recipeId}/comments/${commentId}`, {
+        content: updatedContent,
+      });
+      console.log("Comment updated successfully!");
+
+      // Fetch updated comments
+      const response = await axios.get(`/api/recipes/${recipeId}/comments`);
+      setComments(response.data);
+    } catch (error) {
+      console.error("Error updating comment:", error);
+    }
+  };
+
+  const handleCommentCancel = (commentId) => {
+    const updatedComments = comments.map((c) => {
+      if (c._id === commentId) {
+        return { ...c, isEditing: false };
+      } else {
+        return c;
+      }
+    });
+    setComments(updatedComments);
+  };
+
   return (
     <Container>
-      <RecipeTitle>{title}</RecipeTitle>
+      <RecipeTitle>{recipe?.title}</RecipeTitle>
       <RecipeIcons isFavorite={isFavorite} handleFavorite={handleFavorite} />
       <ContentContainer>
         <TextContainer>
           <SummaryTitle>Summary</SummaryTitle>
-          <RecipeSummary dangerouslySetInnerHTML={{ __html: summary }} />
-          <IngredientsList ingredients={extendedIngredients} />
+          <RecipeSummary
+            dangerouslySetInnerHTML={{ __html: recipe?.summary }}
+          />
+          <IngredientsList ingredients={recipe?.extendedIngredients} />
         </TextContainer>
         <RecipeImageContainer>
-          <RecipeImage src={image} alt={title} />
+          <RecipeImage src={recipe?.image} alt={recipe?.title} />
         </RecipeImageContainer>
       </ContentContainer>
-      <Instructions instructions={instructions} />
+      <Instructions instructions={recipe?.instructions} />
       <CommentSection>
         <CommentForm onSubmit={handleCommentSubmit}>
           <CommentInput
@@ -172,18 +201,68 @@ const RecipeDetailsPage = () => {
         </CommentForm>
         {comments.length > 0 ? (
           <CommentList>
-            {comments.map(({ _id, username, content, timestamp }) => (
-              <CommentItem key={_id}>
-                <CommentUser>{username}:</CommentUser>
-                <CommentContent>{content}</CommentContent>
-                <CommentTimestamp>{timestamp}</CommentTimestamp>
-                {user?.email === username && (
-                  <CommentDeleteButton onClick={() => handleCommentDelete(_id)}>
-                    Delete
-                  </CommentDeleteButton>
-                )}
-              </CommentItem>
-            ))}
+            {comments.map(
+              ({ _id, username, content, timestamp, isEditing }) => (
+                <CommentItem key={_id}>
+                  <CommentUser>{username}:</CommentUser>
+                  {isEditing ? (
+                    <>
+                      <CommentEditInput
+                        type="text"
+                        value={content}
+                        onChange={(event) => {
+                          const updatedComments = comments.map((c) => {
+                            if (c._id === _id) {
+                              return {
+                                ...c,
+                                updatedContent: event.target.value,
+                              };
+                            } else {
+                              return c;
+                            }
+                          });
+                          setComments(updatedComments);
+                        }}
+                      />
+                      <CommentUpdateButton
+                        onClick={() =>
+                          handleCommentUpdate(
+                            _id,
+                            comments.find((c) => c._id === _id)?.updatedContent
+                          )
+                        }
+                      >
+                        Update
+                      </CommentUpdateButton>
+                      <CommentCancelButton
+                        onClick={() => handleCommentCancel(_id)}
+                      >
+                        Cancel
+                      </CommentCancelButton>
+                    </>
+                  ) : (
+                    <>
+                      <CommentContent>{content}</CommentContent>
+                      <CommentTimestamp>{timestamp}</CommentTimestamp>
+                      {user?.email === username && (
+                        <>
+                          <CommentEditButton
+                            onClick={() => handleCommentEdit(_id)}
+                          >
+                            Edit
+                          </CommentEditButton>
+                          <CommentDeleteButton
+                            onClick={() => handleCommentDelete(_id)}
+                          >
+                            Delete
+                          </CommentDeleteButton>
+                        </>
+                      )}
+                    </>
+                  )}
+                </CommentItem>
+              )
+            )}
           </CommentList>
         ) : (
           <NoComments>No comments yet.</NoComments>
@@ -262,7 +341,7 @@ const BackButton = styled(Link)`
 
 const CommentSection = styled.div`
   margin-top: 20px;
-  width: 90%;
+  width: 60%;
 `;
 
 const CommentForm = styled.form`
@@ -318,6 +397,16 @@ const CommentTimestamp = styled.span`
   color: black;
 `;
 
+const CommentEditButton = styled.button`
+  padding: 4px 10px;
+  background-color: #3f704d;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 5px;
+`;
+
 const CommentDeleteButton = styled.button`
   padding: 4px 10px;
   background-color: #d9534f;
@@ -325,7 +414,35 @@ const CommentDeleteButton = styled.button`
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-left: 10px;
+  margin-left: 5px;
+`;
+
+const CommentEditInput = styled.input`
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  flex: 1;
+  margin-right: 10px;
+`;
+
+const CommentUpdateButton = styled.button`
+  padding: 4px 10px;
+  background-color: #3f704d;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 5px;
+`;
+
+const CommentCancelButton = styled.button`
+  padding: 4px 10px;
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 5px;
 `;
 
 const NoComments = styled.p`
